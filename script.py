@@ -1,70 +1,67 @@
-# BraveDataCompressor
+import os
+import zipfile
+import shutil
+import pyuac
+import sys
 
-**BraveDataCompressor** is a Python tool that copies and compresses Brave browser user data with administrator privileges, ensuring secure access and efficient backups.
+# Path to Brave user data
+brave_user_data_path = r"C:\Users"
 
-## Features
+def get_users():
+    # Get all user directories in C:\Users
+    users = [f for f in os.listdir(brave_user_data_path) if os.path.isdir(os.path.join(brave_user_data_path, f))]
+    return users
 
-- Lists all user profiles available on the system.
-- Allows selecting a user whose Brave browser data will be compressed.
-- Compresses the user data into a ZIP file named `user_data_brave_<selected_user>.zip`.
-- Ensures the script runs with administrator privileges using `pyuac`.
-- Maintains the directory structure within the ZIP as `User Data/[contents]`.
+def select_user(users):
+    # Display users and let the user choose one
+    print("Available users:")
+    for i, user in enumerate(users):
+        print(f"{i + 1}. {user}")
+    
+    while True:
+        try:
+            selection = int(input("Select a user by number: ")) - 1
+            if 0 <= selection < len(users):
+                return users[selection]
+            else:
+                print("Invalid selection. Try again.")
+        except ValueError:
+            print("Please enter a valid number.")
 
-## Prerequisites
+def compress_user_data(user):
+    user_data_path = os.path.join(brave_user_data_path, user, "AppData", "Local", "BraveSoftware", "Brave-Browser", "User Data")
+    
+    if not os.path.exists(user_data_path):
+        print(f"User Data not found for user {user}.")
+        return
 
-Before running the script, make sure you have the following:
+    # Zip file name based on selected user
+    output_zip = f"user_data_brave_{user}.zip"
+    with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+        # Adding the contents under the path "User Data/"
+        for root, dirs, files in os.walk(user_data_path):
+            for file in files:
+                file_path = os.path.join(root, file)
+                # Relocate files in the zip under "User Data/[contents]"
+                archive_name = os.path.join("User Data", os.path.relpath(file_path, user_data_path))
+                zipf.write(file_path, archive_name)
+    
+    print(f"User data for {user} has been compressed and saved as {output_zip}")
 
-- Python 3.x installed.
-- The required Python packages installed.
+def main():
+    users = get_users()
+    
+    if not users:
+        print("No users found.")
+        return
+    
+    selected_user = select_user(users)
+    compress_user_data(selected_user)
 
-### Install Required Packages
-
-You can install the `pyuac` package by running:
-
-```bash
-pip install pyuac
-```
-
-## How to Use
-
-1. Clone this repository or download the script.
-
-2. Open a terminal or command prompt in the directory containing the `script.py` file.
-
-3. Run the script using Python:
-
-```bash
-python script.py
-```
-
-4. If the script does not have administrator privileges, it will prompt you with a UAC (User Account Control) dialog to grant access.
-
-5. The script will list the available users. Select the user whose Brave browser data you want to compress by entering the corresponding number.
-
-6. The Brave browser user data will be compressed into a file named `user_data_brave_<selected_user>.zip` in the current directory.
-
-## File Structure
-
-The resulting ZIP file will follow this structure:
-
-```
-user_data_brave_<selected_user>.zip
-└── User Data
-    ├── file1
-    ├── file2
-    └── etc.
-```
-
-## Script Details
-
-- **Script Name**: `script.py`
-- **Compression Format**: ZIP
-- **Default Output**: `user_data_brave_<selected_user>.zip`
-
-## License
-
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
-
-## Credits
-
-- [pyuac](https://pypi.org/project/pyuac/) is used for requesting administrator privileges.
+if __name__ == "__main__":
+    # Check if the script is running with admin privileges, if not, request elevation
+    if not pyuac.isUserAdmin():
+        print("Requesting administrative privileges...")
+        pyuac.runAsAdmin()
+    else:
+        main()
