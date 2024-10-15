@@ -1,6 +1,6 @@
 # BraveDataCompressor
 
-**BraveDataCompressor** is a Python tool that copies and compresses Brave browser user data with administrator privileges, ensuring secure access and efficient backups.
+**BraveDataCompressor** is a Python tool that copies and compresses Brave browser user data with administrator privileges, ensuring secure access and efficient backups. It is used most often to copy user data from Windows to Linux, though right now, this script **only works with windows**
 
 ## Features
 
